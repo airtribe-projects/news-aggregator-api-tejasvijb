@@ -6,6 +6,16 @@ const axios = require("axios");
 const router = express.Router();
 
 // Get news based on user preferences
+const newapiCategories = [
+    "business",
+    "entertainment",
+    "general",
+    "health",
+    "science",
+    "sports",
+    "technology",
+];
+
 router.get("/", authMiddleware, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);
@@ -18,6 +28,19 @@ router.get("/", authMiddleware, async (req, res) => {
 
         if (!user.preferences || user.preferences.length === 0) {
             return res.status(400).json({ message: "No preferences set" });
+        }
+
+        // Validate user preferences
+        const invalidPreferences = user.preferences.filter(
+            (pref) => !newapiCategories.includes(pref)
+        );
+        if (invalidPreferences.length > 0) {
+            return res.status(400).json({
+                message:
+                    "Invalid preferences, must only include valid categories",
+                invalidPreferences,
+                validCategories: newapiCategories,
+            });
         }
 
         // Fetch news for each preference in parallel
@@ -37,7 +60,16 @@ router.get("/", authMiddleware, async (req, res) => {
         // Wait for all promises
         const results = await Promise.allSettled(newsPromises);
 
-        res.json({ news: results });
+        const news = results.map((result) => {
+            if (result.status === "fulfilled") {
+                return result.value;
+            } else {
+                console.error("Error fetching news:", result.reason);
+                return { category: result.category, articles: [] };
+            }
+        });
+
+        res.json({ news });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Server error" });

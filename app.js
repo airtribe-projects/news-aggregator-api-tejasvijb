@@ -37,7 +37,7 @@ app.use("/news", newsRouter);
 if (require.main === module) {
     app.listen(port, (err) => {
         if (err) {
-            return console.error("Something bad happened", err);
+            console.error("Something bad happened", err);
         }
         console.log(`Server is listening on ${port}`);
     });

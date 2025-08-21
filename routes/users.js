@@ -46,8 +46,18 @@ router.post("/signup", validateSignup, async (req, res) => {
     }
 });
 
+const validateLogin = (req, res, next) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res
+            .status(400)
+            .json({ message: "Email and password are required" });
+    }
+    next();
+};
+
 // Login
-router.post("/login", async (req, res) => {
+router.post("/login", validateLogin, async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
@@ -64,7 +74,6 @@ router.post("/login", async (req, res) => {
         });
         res.status(200).json({ token });
     } catch (err) {
-        console.log(err);
         res.status(500).json({ message: "Server error" });
     }
 });
@@ -73,7 +82,6 @@ router.post("/login", async (req, res) => {
 router.get("/preferences", authMiddleware, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);
-        console.log(user);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
